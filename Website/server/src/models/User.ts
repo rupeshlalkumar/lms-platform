@@ -38,6 +38,19 @@ const userSchema = new Schema(
       default: true,
       required: true,
     },
+
+    
+    passwordResetTokenHash: {
+      type: String,
+      default: undefined,
+      select: false,
+    },
+    passwordResetExpiresAt: {
+      type: Date,
+      default: undefined,
+      select: false,
+    },
+
   },
   {
     timestamps: true,
