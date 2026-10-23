@@ -5,11 +5,14 @@ import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import mongoose from "mongoose";
 import authRoutes from "./routes/auth.routes.js";
+import courseRoutes from "./routes/course.routes.js";
+import enrollmentRoutes from "./routes/enrollment.routes.js";
 
 const app = express();
 
 // Security headers
 app.use(helmet());
+
 
 // Frontend connection
 app.use(
@@ -37,5 +40,7 @@ app.get("/api/health", (_req, res) => {
 
 // Authentication APIs
 app.use("/api/auth", authRoutes);
+app.use("/api/courses", courseRoutes);
+app.use("/api/enrollments", enrollmentRoutes);
 
 export default app;
