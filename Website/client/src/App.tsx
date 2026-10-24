@@ -1,3 +1,4 @@
+
 import {
   BrowserRouter,
   Link,
@@ -15,6 +16,7 @@ import ProtectedRoute from "./ProtectedRoute";
 import StudentDashboard from "./StudentDashboard";
 import { AuthProvider } from "./AuthContext";
 import { useAuth } from "./useAuth";
+import CourseLearningPage from "./CourseLearningPage";
 
 const publicPages = [
   { path: "/about", title: "About Us" },
@@ -129,10 +131,7 @@ function Footer() {
           </p>
         </div>
 
-        <nav
-          aria-label="Footer navigation"
-          className="flex flex-wrap gap-5"
-        >
+        <nav aria-label="Footer navigation" className="flex flex-wrap gap-5">
           <Link
             className="text-sm text-slate-300 hover:text-white"
             to="/faq"
@@ -175,6 +174,27 @@ function Footer() {
 function HomePage() {
   const { isAuthenticated } = useAuth();
 
+  const features = [
+    {
+      number: "01",
+      title: "Structured Courses",
+      description:
+        "Follow organised lessons that make complex topics easier to understand.",
+    },
+    {
+      number: "02",
+      title: "Learn at Your Pace",
+      description:
+        "Study on your schedule and revisit learning materials when needed.",
+    },
+    {
+      number: "03",
+      title: "Practical Skills",
+      description:
+        "Focus on useful knowledge you can apply beyond the classroom.",
+    },
+  ];
+
   return (
     <main>
       <section className="bg-gradient-to-br from-blue-50 via-white to-white">
@@ -205,7 +225,9 @@ function HomePage() {
               to={isAuthenticated ? "/student/dashboard" : "/about"}
               className="inline-flex min-h-12 items-center justify-center rounded-lg border border-slate-300 bg-white px-6 py-3 font-bold text-slate-800 transition hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
             >
-              {isAuthenticated ? "Go to Dashboard" : "Discover Our Academy"}
+              {isAuthenticated
+                ? "Go to Dashboard"
+                : "Discover Our Academy"}
             </Link>
           </div>
         </div>
@@ -227,26 +249,7 @@ function HomePage() {
         </div>
 
         <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-          {[
-            {
-              number: "01",
-              title: "Structured Courses",
-              description:
-                "Follow organised lessons that make complex topics easier to understand.",
-            },
-            {
-              number: "02",
-              title: "Learn at Your Pace",
-              description:
-                "Study on your schedule and revisit learning materials when needed.",
-            },
-            {
-              number: "03",
-              title: "Practical Skills",
-              description:
-                "Focus on useful knowledge you can apply beyond the classroom.",
-            },
-          ].map((feature) => (
+          {features.map((feature) => (
             <article
               key={feature.number}
               className="rounded-2xl border border-slate-200 bg-white p-7 transition hover:-translate-y-1 hover:shadow-lg"
@@ -371,11 +374,21 @@ function RouteContent() {
 
       <Route path="/courses/:slug" element={<CourseDetailsPage />} />
 
-      {/* Login required for all routes nested inside ProtectedRoute. */}
+      {/* All routes inside this parent require authentication. */}
       <Route element={<ProtectedRoute />}>
         <Route
           path="/student/dashboard"
           element={<StudentDashboard />}
+        />
+
+        <Route
+          path="/courses/:slug/learn"
+          element={<CourseLearningPage />}
+        />
+
+        <Route
+          path="/courses/:slug/learn/:lessonSlug"
+          element={<CourseLearningPage />}
         />
       </Route>
 

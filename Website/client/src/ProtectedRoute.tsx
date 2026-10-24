@@ -1,3 +1,4 @@
+
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "./useAuth";
 
@@ -10,10 +11,7 @@ export default function ProtectedRoute() {
       <Navigate
         to="/login"
         replace
-        state={{
-          from: location,
-          message: "Dashboard access karne ke liye pehle login karein.",
-        }}
+        state={{ from: location }}
       />
     );
   }

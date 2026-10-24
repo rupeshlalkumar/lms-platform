@@ -280,7 +280,7 @@ export default function StudentDashboard() {
                     </div>
 
                     <Link
-                      to={`/courses/${encodeURIComponent(enrollment.course.slug)}`}
+                      to={`/courses/${encodeURIComponent(enrollment.course.slug)}/learn`}
                       className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-lg bg-blue-700 px-5 py-3 text-center font-semibold text-white transition hover:bg-blue-800"
                     >
                       View Course

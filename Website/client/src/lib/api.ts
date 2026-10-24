@@ -1,3 +1,4 @@
+
 const API_BASE_URL = "http://localhost:5000/api";
 
 type ApiErrorBody = {
@@ -7,6 +8,8 @@ type ApiErrorBody = {
     message: string;
   }>;
 };
+
+// -------------------- AUTH TYPES --------------------
 
 export type AuthUser = {
   id: string;
@@ -30,6 +33,62 @@ export type RegisterResponse = {
   user: AuthUser;
 };
 
+// -------------------- COURSE LESSON TYPES --------------------
+
+export type CourseLesson = {
+  id: string;
+  title: string;
+  slug: string;
+  description: string;
+  order: number;
+  content: string;
+  isCompleted: boolean;
+};
+
+export type CourseLessonsResponse = {
+  success: boolean;
+  course: {
+    id: string;
+    title: string;
+    slug: string;
+  };
+  count: number;
+  progress: {
+    completedLessons: number;
+    totalLessons: number;
+    percentage: number;
+  };
+  lessons: CourseLesson[];
+};
+
+export type SingleLessonResponse = {
+  success: boolean;
+  course: {
+    id: string;
+    title: string;
+    slug: string;
+  };
+  lesson: CourseLesson;
+};
+
+export type CompleteLessonResponse = {
+  success: boolean;
+  message: string;
+  progress: {
+    completedLessons: number;
+    percentage: number;
+    enrollmentStatus: "active" | "completed" | "cancelled";
+  };
+  lesson: {
+    id: string;
+    title: string;
+    slug: string;
+    isCompleted: boolean;
+  };
+};
+
+// -------------------- RESPONSE HANDLER --------------------
+
 async function parseResponse<T>(response: Response): Promise<T> {
   const data = (await response.json().catch(() => ({}))) as ApiErrorBody & T;
 
@@ -46,6 +105,8 @@ async function parseResponse<T>(response: Response): Promise<T> {
 
   return data;
 }
+
+// -------------------- PUBLIC POST REQUEST --------------------
 
 async function request<T>(
   endpoint: string,
@@ -70,6 +131,8 @@ async function request<T>(
   return parseResponse<T>(response);
 }
 
+// -------------------- AUTH FUNCTIONS --------------------
+
 export async function loginUser(
   email: string,
   password: string,
@@ -89,6 +152,8 @@ export async function registerUser(
   });
 }
 
+// -------------------- AUTHENTICATED REQUEST --------------------
+
 export async function authenticatedRequest<T>(
   endpoint: string,
   accessToken: string,
@@ -97,17 +162,17 @@ export async function authenticatedRequest<T>(
   let response: Response;
 
   try {
+    const headers = new Headers(options.headers);
+
+    headers.set("Authorization", `Bearer ${accessToken}`);
+
+    if (options.body && !headers.has("Content-Type")) {
+      headers.set("Content-Type", "application/json");
+    }
+
     response = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
-      headers: {
-        ...Object.fromEntries(new Headers(options.headers).entries()),
-        Authorization: `Bearer ${accessToken}`,
-        ...(options.body &&
-        typeof options.body === "string" &&
-        !new Headers(options.headers).has("Content-Type")
-          ? { "Content-Type": "application/json" }
-          : {}),
-      },
+      headers,
     });
   } catch {
     throw new Error(
@@ -116,4 +181,56 @@ export async function authenticatedRequest<T>(
   }
 
   return parseResponse<T>(response);
+}
+
+// -------------------- COURSE LEARNING API --------------------
+
+/**
+ * Enrolled student ke course ke published lessons fetch karta hai.
+ */
+export async function getCourseLessons(
+  courseSlug: string,
+  accessToken: string,
+): Promise<CourseLessonsResponse> {
+  return authenticatedRequest<CourseLessonsResponse>(
+    `/courses/${encodeURIComponent(courseSlug)}/lessons`,
+    accessToken,
+    {
+      method: "GET",
+    },
+  );
+}
+
+/**
+ * Ek specific published lesson fetch karta hai.
+ */
+export async function getCourseLesson(
+  courseSlug: string,
+  lessonSlug: string,
+  accessToken: string,
+): Promise<SingleLessonResponse> {
+  return authenticatedRequest<SingleLessonResponse>(
+    `/courses/${encodeURIComponent(courseSlug)}/lessons/${encodeURIComponent(lessonSlug)}`,
+    accessToken,
+    {
+      method: "GET",
+    },
+  );
+}
+
+/**
+ * Lesson ko complete mark karke progress database mein save karta hai.
+ */
+export async function completeCourseLesson(
+  courseSlug: string,
+  lessonSlug: string,
+  accessToken: string,
+): Promise<CompleteLessonResponse> {
+  return authenticatedRequest<CompleteLessonResponse>(
+    `/courses/${encodeURIComponent(courseSlug)}/lessons/${encodeURIComponent(lessonSlug)}/complete`,
+    accessToken,
+    {
+      method: "PATCH",
+    },
+  );
 }
