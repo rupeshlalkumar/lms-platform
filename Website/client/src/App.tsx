@@ -1,4 +1,3 @@
-
 import {
   BrowserRouter,
   Link,
@@ -17,6 +16,8 @@ import StudentDashboard from "./StudentDashboard";
 import { AuthProvider } from "./AuthContext";
 import { useAuth } from "./useAuth";
 import CourseLearningPage from "./CourseLearningPage";
+import AdminCoursesPage from "./AdminCoursesPage";
+import AdminLessonsPage from "./AdminLessonsPage";
 
 const publicPages = [
   { path: "/about", title: "About Us" },
@@ -80,10 +81,14 @@ function Header() {
               </span>
 
               <Link
-                to="/student/dashboard"
+                to={
+                  user.role === "admin"
+                    ? "/admin/courses"
+                    : "/student/dashboard"
+                }
                 className="text-sm font-semibold text-blue-700 hover:text-blue-800"
               >
-                Dashboard
+                {user.role === "admin" ? "Course Management" : "Dashboard"}
               </Link>
 
               <button
@@ -132,10 +137,7 @@ function Footer() {
         </div>
 
         <nav aria-label="Footer navigation" className="flex flex-wrap gap-5">
-          <Link
-            className="text-sm text-slate-300 hover:text-white"
-            to="/faq"
-          >
+          <Link className="text-sm text-slate-300 hover:text-white" to="/faq">
             FAQ
           </Link>
 
@@ -146,10 +148,7 @@ function Footer() {
             Privacy
           </Link>
 
-          <Link
-            className="text-sm text-slate-300 hover:text-white"
-            to="/terms"
-          >
+          <Link className="text-sm text-slate-300 hover:text-white" to="/terms">
             Terms
           </Link>
 
@@ -209,8 +208,8 @@ function HomePage() {
           </h1>
 
           <p className="mt-6 max-w-2xl text-base leading-8 text-slate-600 sm:text-lg">
-            Build practical skills with structured courses designed to help
-            you learn confidently and move forward in your career.
+            Build practical skills with structured courses designed to help you
+            learn confidently and move forward in your career.
           </p>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -225,9 +224,7 @@ function HomePage() {
               to={isAuthenticated ? "/student/dashboard" : "/about"}
               className="inline-flex min-h-12 items-center justify-center rounded-lg border border-slate-300 bg-white px-6 py-3 font-bold text-slate-800 transition hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
             >
-              {isAuthenticated
-                ? "Go to Dashboard"
-                : "Discover Our Academy"}
+              {isAuthenticated ? "Go to Dashboard" : "Discover Our Academy"}
             </Link>
           </div>
         </div>
@@ -322,9 +319,7 @@ function PlaceholderPage({ title }: { title: string }) {
 function NotFoundPage() {
   return (
     <main className="mx-auto min-h-[55vh] w-full max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
-      <h1 className="text-4xl font-extrabold text-slate-950">
-        Page not found
-      </h1>
+      <h1 className="text-4xl font-extrabold text-slate-950">Page not found</h1>
 
       <p className="mt-4 text-slate-600">
         The page you are looking for does not exist.
@@ -343,9 +338,7 @@ function NotFoundPage() {
 function RouteContent() {
   const location = useLocation();
 
-  const routeState = location.state as
-    | { registrationSuccess?: string }
-    | null;
+  const routeState = location.state as { registrationSuccess?: string } | null;
 
   return (
     <Routes>
@@ -362,9 +355,7 @@ function RouteContent() {
       <Route
         path="/login"
         element={
-          <LoginPage
-            registrationSuccess={routeState?.registrationSuccess}
-          />
+          <LoginPage registrationSuccess={routeState?.registrationSuccess} />
         }
       />
 
@@ -375,16 +366,18 @@ function RouteContent() {
       <Route path="/courses/:slug" element={<CourseDetailsPage />} />
 
       {/* All routes inside this parent require authentication. */}
+
       <Route element={<ProtectedRoute />}>
-        <Route
-          path="/student/dashboard"
-          element={<StudentDashboard />}
-        />
+        <Route path="/admin/courses" element={<AdminCoursesPage />} />
 
         <Route
-          path="/courses/:slug/learn"
-          element={<CourseLearningPage />}
+          path="/admin/courses/:courseId/lessons"
+          element={<AdminLessonsPage />}
         />
+
+        <Route path="/student/dashboard" element={<StudentDashboard />} />
+
+        <Route path="/courses/:slug/learn" element={<CourseLearningPage />} />
 
         <Route
           path="/courses/:slug/learn/:lessonSlug"

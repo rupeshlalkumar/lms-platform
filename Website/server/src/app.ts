@@ -7,19 +7,19 @@ import mongoose from "mongoose";
 import authRoutes from "./routes/auth.routes.js";
 import courseRoutes from "./routes/course.routes.js";
 import enrollmentRoutes from "./routes/enrollment.routes.js";
+import adminCourseRoutes from "./routes/admin-course.routes.js";
 
 const app = express();
 
 // Security headers
 app.use(helmet());
 
-
 // Frontend connection
 app.use(
   cors({
     origin: process.env.CLIENT_URL || "http://localhost:5173",
     credentials: true,
-  })
+  }),
 );
 
 // Request body parsers
@@ -38,9 +38,12 @@ app.get("/api/health", (_req, res) => {
   });
 });
 
-// Authentication APIs
+// API routes
 app.use("/api/auth", authRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api/enrollments", enrollmentRoutes);
+
+// Admin-only course management APIs
+app.use("/api/admin", adminCourseRoutes);
 
 export default app;
