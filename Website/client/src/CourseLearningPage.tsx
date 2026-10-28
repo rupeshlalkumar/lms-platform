@@ -1,3 +1,4 @@
+
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
@@ -11,6 +12,62 @@ import {
 
 import { useAuth } from "./useAuth";
 
+type LessonWithVideo = CourseLesson & {
+  videoUrl?: string;
+};
+
+function getYouTubeEmbedUrl(value?: string): string | null {
+  if (!value?.trim()) {
+    return null;
+  }
+
+  try {
+    const url = new URL(value.trim());
+
+    if (url.protocol !== "https:") {
+      return null;
+    }
+
+    const host = url.hostname.toLowerCase();
+    const pathSegments = url.pathname
+      .split("/")
+      .filter(Boolean);
+
+    let videoId: string | null = null;
+
+    if (
+      ["youtube.com", "www.youtube.com", "m.youtube.com"].includes(host)
+    ) {
+      if (url.pathname === "/watch") {
+        videoId = url.searchParams.get("v");
+      } else if (
+        ["embed", "shorts"].includes(pathSegments[0]) &&
+        pathSegments.length >= 2
+      ) {
+        videoId = pathSegments[1];
+      }
+    } else if (
+      ["youtu.be", "www.youtu.be"].includes(host)
+    ) {
+      videoId = pathSegments[0] ?? null;
+    } else if (
+      host === "www.youtube-nocookie.com" &&
+      pathSegments[0] === "embed" &&
+      pathSegments.length >= 2
+    ) {
+      videoId = pathSegments[1];
+    }
+
+    if (!videoId || !/^[a-zA-Z0-9_-]{6,}$/.test(videoId)) {
+      return null;
+    }
+
+    return `https://www.youtube-nocookie.com/embed/${encodeURIComponent(videoId)}`;
+  } catch {
+    return null;
+  }
+}
+
 export default function CourseLearningPage() {
   const { slug, lessonSlug } = useParams<{
     slug: string;
@@ -19,13 +76,11 @@ export default function CourseLearningPage() {
 
   const { accessToken, user } = useAuth();
 
-  const [courseData, setCourseData] = useState<CourseLessonsResponse | null>(
-    null,
-  );
+  const [courseData, setCourseData] =
+    useState<CourseLessonsResponse | null>(null);
 
-  const [selectedLesson, setSelectedLesson] = useState<CourseLesson | null>(
-    null,
-  );
+  const [selectedLesson, setSelectedLesson] =
+    useState<CourseLesson | null>(null);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isCompleting, setIsCompleting] = useState(false);
@@ -81,18 +136,19 @@ export default function CourseLearningPage() {
 
     async function fetchLearningData() {
       if (!accessToken || !slug) {
+        setIsLoading(false);
+        setError("Session ya course information nahi mili.");
         return;
       }
 
       setIsLoading(true);
-      setError("");
+      setError(null);
+      setNotice(null);
 
       try {
         const data = await getCourseLessons(slug, accessToken);
 
-        if (cancelled) {
-          return;
-        }
+        if (cancelled) return;
 
         setCourseData(data);
 
@@ -106,21 +162,21 @@ export default function CourseLearningPage() {
           return;
         }
 
-        const lesson = await getCourseLesson(
+        const response = await getCourseLesson(
           slug,
           targetLesson.slug,
           accessToken,
         );
 
         if (!cancelled) {
-          setSelectedLesson(lesson.lesson);
+          setSelectedLesson(response.lesson);
         }
       } catch (err) {
         if (!cancelled) {
           setError(
             err instanceof Error
               ? err.message
-              : "Unable to load course lessons.",
+              : "Course lessons load nahi ho paaye.",
           );
         }
       } finally {
@@ -155,10 +211,7 @@ export default function CourseLearningPage() {
 
       setSelectedLesson((current) =>
         current
-          ? {
-              ...current,
-              isCompleted: true,
-            }
+          ? { ...current, isCompleted: true }
           : current,
       );
 
@@ -385,6 +438,43 @@ export default function CourseLearningPage() {
                     {selectedLesson.description}
                   </p>
                 )}
+
+                {(() => {
+                  const videoUrl = (selectedLesson as LessonWithVideo).videoUrl;
+                  const embedUrl = getYouTubeEmbedUrl(videoUrl);
+
+                  if (embedUrl) {
+                    return (
+                      <section className="mt-6" aria-label="Lesson video">
+                        <div className="aspect-video w-full overflow-hidden rounded-xl bg-black">
+                          <iframe
+                            key={embedUrl}
+                            src={embedUrl}
+                            title={`YouTube video: ${selectedLesson.title}`}
+                            className="h-full w-full border-0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            referrerPolicy="strict-origin-when-cross-origin"
+                            allowFullScreen
+                          />
+                        </div>
+                      </section>
+                    );
+                  }
+
+                  if (videoUrl?.trim()) {
+                    return (
+                      <p
+                        className="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-800"
+                        role="status"
+                      >
+                        Is lesson ka video URL valid YouTube link nahi hai.
+                        Admin se URL check karwayein.
+                      </p>
+                    );
+                  }
+
+                  return null;
+                })()}
 
                 <article className="mt-6 whitespace-pre-wrap break-words leading-8 text-slate-800">
                   {selectedLesson.content}

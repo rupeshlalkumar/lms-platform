@@ -12,6 +12,7 @@ type Lesson = {
   slug: string;
   description: string;
   content: string;
+  videoUrl?: string;
   order: number;
   status: LessonStatus;
 };
@@ -29,6 +30,7 @@ type LessonForm = {
   slug: string;
   description: string;
   content: string;
+  videoUrl: string;
   order: string;
   status: LessonStatus;
 };
@@ -38,6 +40,7 @@ const emptyForm: LessonForm = {
   slug: "",
   description: "",
   content: "",
+  videoUrl: "",
   order: "1",
   status: "draft",
 };
@@ -137,6 +140,7 @@ export default function AdminLessonsPage() {
       slug: lesson.slug,
       description: lesson.description ?? "",
       content: lesson.content,
+      videoUrl: lesson.videoUrl ?? "",
       order: String(lesson.order),
       status: lesson.status,
     });
@@ -173,6 +177,7 @@ export default function AdminLessonsPage() {
       slug: makeSlug(form.slug || form.title),
       description: form.description.trim(),
       content: form.content.trim(),
+      videoUrl: form.videoUrl.trim(),
       order,
       status: form.status,
     };
@@ -185,6 +190,30 @@ export default function AdminLessonsPage() {
     ) {
       setError("Title kam se kam 3 characters ka aur content required hai.");
       return;
+    }
+
+    if (payload.videoUrl) {
+      try {
+        const url = new URL(payload.videoUrl);
+        const host = url.hostname.toLowerCase();
+
+        const supportedHosts = [
+          "youtube.com",
+          "www.youtube.com",
+          "m.youtube.com",
+          "youtu.be",
+          "www.youtu.be",
+          "www.youtube-nocookie.com",
+        ];
+
+        if (url.protocol !== "https:" || !supportedHosts.includes(host)) {
+          setError("Valid HTTPS YouTube video URL enter karo.");
+          return;
+        }
+      } catch {
+        setError("Video URL valid nahi hai.");
+        return;
+      }
     }
 
     setSaving(true);
@@ -205,7 +234,11 @@ export default function AdminLessonsPage() {
         },
       );
 
-      setMessage(result.message ?? (editingId ? "Lesson update ho gaya." : "Lesson create ho gaya."));
+      setMessage(
+        result.message ??
+          (editingId ? "Lesson update ho gaya." : "Lesson create ho gaya."),
+      );
+
       resetForm();
       await loadLessons();
     } catch (err) {
@@ -447,6 +480,33 @@ export default function AdminLessonsPage() {
 
           <div>
             <label
+              htmlFor="lesson-video-url"
+              className="mb-1.5 block text-sm font-medium text-gray-700"
+            >
+              YouTube Video URL
+            </label>
+            <input
+              id="lesson-video-url"
+              type="url"
+              maxLength={2048}
+              value={form.videoUrl}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  videoUrl: event.target.value,
+                }))
+              }
+              className="w-full rounded-lg border border-gray-300 px-3 py-2.5 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              placeholder="https://www.youtube.com/watch?v=VIDEO_ID"
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              YouTube Unlisted video ka URL paste karo. Video optional hai;
+              blank chhod sakte ho. Student page par playback agle step mein add hoga.
+            </p>
+          </div>
+
+          <div>
+            <label
               htmlFor="lesson-content"
               className="mb-1.5 block text-sm font-medium text-gray-700"
             >
@@ -468,7 +528,7 @@ export default function AdminLessonsPage() {
               placeholder="Lesson ka text content yahan likho..."
             />
             <p className="mt-1 text-xs text-gray-500">
-              Maximum 50,000 characters. Video upload is version mein included nahi hai.
+              Maximum 50,000 characters.
             </p>
           </div>
 
@@ -515,7 +575,9 @@ export default function AdminLessonsPage() {
         </div>
 
         {loading ? (
-          <p className="py-8 text-center text-gray-500">Lessons load ho rahe hain...</p>
+          <p className="py-8 text-center text-gray-500">
+            Lessons load ho rahe hain...
+          </p>
         ) : lessons.length === 0 ? (
           <div className="rounded-xl border border-dashed border-gray-300 p-8 text-center text-gray-600">
             Abhi koi lesson nahi hai. Upar form se pehla lesson create karo.
@@ -559,6 +621,22 @@ export default function AdminLessonsPage() {
                         </p>
                       )}
 
+                      {lesson.videoUrl && (
+                        <p className="mt-2 break-all text-sm">
+                          <span className="font-medium text-gray-700">
+                            Video URL:{" "}
+                          </span>
+                          <a
+                            href={lesson.videoUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-blue-700 hover:underline"
+                          >
+                            {lesson.videoUrl}
+                          </a>
+                        </p>
+                      )}
+
                       <p className="mt-3 line-clamp-3 whitespace-pre-wrap text-sm text-gray-700">
                         {lesson.content}
                       </p>
@@ -578,7 +656,9 @@ export default function AdminLessonsPage() {
                         onClick={() => void changeStatus(lesson)}
                         className="rounded-lg border border-blue-200 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50"
                       >
-                        {lesson.status === "published" ? "Unpublish" : "Publish"}
+                        {lesson.status === "published"
+                          ? "Unpublish"
+                          : "Publish"}
                       </button>
 
                       <button

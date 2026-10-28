@@ -8,6 +8,7 @@ import authRoutes from "./routes/auth.routes.js";
 import courseRoutes from "./routes/course.routes.js";
 import enrollmentRoutes from "./routes/enrollment.routes.js";
 import adminCourseRoutes from "./routes/admin-course.routes.js";
+import adminLessonRoutes from "./routes/admin-lesson.routes.js";
 
 const app = express();
 
@@ -45,5 +46,8 @@ app.use("/api/enrollments", enrollmentRoutes);
 
 // Admin-only course management APIs
 app.use("/api/admin", adminCourseRoutes);
+
+// Admin-only lesson management APIs
+app.use("/api/admin", adminLessonRoutes);
 
 export default app;

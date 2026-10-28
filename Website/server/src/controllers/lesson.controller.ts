@@ -1,4 +1,3 @@
-
 import type { Request, Response } from "express";
 import mongoose from "mongoose";
 
@@ -96,10 +95,7 @@ async function getEnrolledCourse(
  * GET /api/courses/:slug/lessons
  * Sirf enrolled students ke published lessons return karta hai.
  */
-export async function getCourseLessons(
-  req: Request,
-  res: Response,
-) {
+export async function getCourseLessons(req: Request, res: Response) {
   try {
     const slug =
       typeof req.params.slug === "string"
@@ -127,7 +123,7 @@ export async function getCourseLessons(
       course: result.course._id,
       status: "published",
     })
-      .select("title slug description order content")
+      .select("title slug description order content videoUrl")
       .sort({ order: 1 })
       .lean();
 
@@ -166,6 +162,7 @@ export async function getCourseLessons(
         description: lesson.description,
         order: lesson.order,
         content: lesson.content,
+        videoUrl: lesson.videoUrl ?? "",
         isCompleted: completedIds.has(lesson._id.toString()),
       })),
     });
@@ -183,10 +180,7 @@ export async function getCourseLessons(
  * GET /api/courses/:slug/lessons/:lessonSlug
  * Sirf enrolled students ke liye ek published lesson return karta hai.
  */
-export async function getCourseLesson(
-  req: Request,
-  res: Response,
-) {
+export async function getCourseLesson(req: Request, res: Response) {
   try {
     const slug =
       typeof req.params.slug === "string"
@@ -220,7 +214,7 @@ export async function getCourseLesson(
       slug: lessonSlug,
       status: "published",
     })
-      .select("title slug description order content")
+      .select("title slug description order content videoUrl")
       .lean();
 
     if (!lesson) {
@@ -250,6 +244,7 @@ export async function getCourseLesson(
         description: lesson.description,
         order: lesson.order,
         content: lesson.content,
+        videoUrl: lesson.videoUrl ?? "",
         isCompleted: completedIds.has(lesson._id.toString()),
       },
     });
@@ -263,15 +258,11 @@ export async function getCourseLesson(
   }
 }
 
-
 /**
  * PATCH /api/courses/:slug/lessons/:lessonSlug/complete
  * Enrolled student lesson ko complete mark kar sakta hai.
  */
-export async function completeCourseLesson(
-  req: Request,
-  res: Response,
-) {
+export async function completeCourseLesson(req: Request, res: Response) {
   try {
     const slug =
       typeof req.params.slug === "string"
@@ -369,8 +360,7 @@ export async function completeCourseLesson(
 
     // Duplicate completion se lesson dobara count nahi hoga.
     const alreadyCompleted = enrollment.completedLessons.some(
-      (id: mongoose.Types.ObjectId) =>
-        id.toString() === lesson._id.toString(),
+      (id: mongoose.Types.ObjectId) => id.toString() === lesson._id.toString(),
     );
 
     if (!alreadyCompleted) {
@@ -386,10 +376,7 @@ export async function completeCourseLesson(
       enrollment.progressPercentage =
         totalLessons === 0
           ? 0
-          : Math.min(
-              100,
-              Math.round((completedLessons / totalLessons) * 100),
-            );
+          : Math.min(100, Math.round((completedLessons / totalLessons) * 100));
 
       if (totalLessons > 0 && completedLessons >= totalLessons) {
         enrollment.status = "completed";

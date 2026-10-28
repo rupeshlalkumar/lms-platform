@@ -1,3 +1,4 @@
+
 import type { Request, Response } from "express";
 import mongoose, { type HydratedDocument } from "mongoose";
 import Course, { type CourseDocument } from "../models/Course.js";
@@ -9,6 +10,7 @@ const editableFields = [
   "slug",
   "description",
   "content",
+  "videoUrl",
   "order",
   "status",
 ] as const;
@@ -18,6 +20,7 @@ type LessonInput = {
   slug?: string;
   description?: string;
   content?: string;
+  videoUrl?: string;
   order?: number;
   status?: "draft" | "published";
 };
@@ -34,6 +37,72 @@ type FindCourseResult =
   | {
       course: HydratedDocument<CourseDocument>;
     };
+
+function validateYouTubeUrl(value: string): string | null {
+  const videoUrl = value.trim();
+
+  // Video URL is optional.
+  if (!videoUrl) {
+    return null;
+  }
+
+  if (videoUrl.length > 2048) {
+    return "Video URL must not exceed 2048 characters.";
+  }
+
+  try {
+    const url = new URL(videoUrl);
+
+    if (url.protocol !== "https:") {
+      return "Video URL must use HTTPS.";
+    }
+
+    const hostname = url.hostname.toLowerCase();
+
+    const standardHosts = [
+      "youtube.com",
+      "www.youtube.com",
+      "m.youtube.com",
+    ];
+
+    const shortHosts = ["youtu.be", "www.youtu.be"];
+
+    const embedHosts = [
+      ...standardHosts,
+      "www.youtube-nocookie.com",
+    ];
+
+    const isWatchUrl =
+      standardHosts.includes(hostname) &&
+      url.pathname === "/watch" &&
+      Boolean(url.searchParams.get("v"));
+
+    const isShortUrl =
+      shortHosts.includes(hostname) &&
+      url.pathname.split("/").filter(Boolean).length === 1;
+
+    const isEmbedUrl =
+      embedHosts.includes(hostname) &&
+      /^\/embed\/[^/]+\/?$/.test(url.pathname);
+
+    const isShortsUrl =
+      standardHosts.includes(hostname) &&
+      /^\/shorts\/[^/]+\/?$/.test(url.pathname);
+
+    if (
+      !isWatchUrl &&
+      !isShortUrl &&
+      !isEmbedUrl &&
+      !isShortsUrl
+    ) {
+      return "Enter a supported YouTube watch, short, Shorts, or embed URL.";
+    }
+
+    return null;
+  } catch {
+    return "Enter a valid YouTube video URL.";
+  }
+}
 
 function validateLessonInput(
   body: unknown,
@@ -72,6 +141,7 @@ function validateLessonInput(
     "slug",
     "description",
     "content",
+    "videoUrl",
     "status",
   ]) {
     if (
@@ -102,6 +172,15 @@ function validateLessonInput(
     return {
       error: "Status must be draft or published.",
     };
+  }
+
+  if ("videoUrl" in input) {
+    const videoUrl = input.videoUrl as string;
+    const videoUrlError = validateYouTubeUrl(videoUrl);
+
+    if (videoUrlError) {
+      return { error: videoUrlError };
+    }
   }
 
   const normalized: Record<string, unknown> = {};
@@ -259,6 +338,7 @@ export async function createAdminLesson(
       ...data,
       course: result.course._id,
       description: data.description ?? "",
+      videoUrl: data.videoUrl ?? "",
       status: data.status ?? "draft",
     });
 

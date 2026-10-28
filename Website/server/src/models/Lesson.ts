@@ -40,6 +40,13 @@ const lessonSchema = new Schema(
       maxlength: 50000,
     },
 
+    videoUrl: {
+      type: String,
+      default: "",
+      trim: true,
+      maxlength: 2048,
+    },
+
     order: {
       type: Number,
       required: true,

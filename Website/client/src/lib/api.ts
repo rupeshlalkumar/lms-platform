@@ -42,6 +42,7 @@ export type CourseLesson = {
   description: string;
   order: number;
   content: string;
+  videoUrl?: string;
   isCompleted: boolean;
 };
 
